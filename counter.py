@@ -11,7 +11,7 @@ import json
 
 """on ouvre les fichiers(output.json et train.conllu) qu'on va utiliser"""
 file = open("output.json", encoding= 'utf-8' )
-corpus = json.load(file)
+corpus = json.load(file) "corpus est lu comme une liste"
 
 train_corpus = open("train.conllu", "r", encoding="utf-8")
 read_conllu = list(train_corpus)
@@ -34,6 +34,8 @@ def train_word_list():
             data_string = data_string.encode("latin1").decode("utf-8")
         except (UnicodeDecodeError, UnicodeEncodeError) as e:
             continue
+    """J'ai du mal à comprendre pourquoi on a besoin de ce processus d'encodage et de décodage, mais si je l'ignore
+    mon programme va retourner des mauvais résultats """
         words_brut = data_string.strip().split()
         if len(data_string) <= 1 or data_string[0] == "#":
             continue
@@ -77,8 +79,8 @@ print(count_perfect_sentence(corpus))
 """
 EX3
 """
-
 def w_not_in_train_corpus(corpus, train_word ):   #prend une liste en parametre, retourne un string
+    """la fonction va retourner le taux d'érreur en prenant en compte que les mots hors de train corpus"""
     count_errors = 0
     count_OOV= 0
     for example in corpus:
@@ -128,6 +130,7 @@ def w_ambigu(dicto):
 #print(len(w_ambigu(train_w_dict(read_conllu))))
 
 def rate_ambigu(corpus, w_ambigu):   #prend une liste en parametre, retourne un string
+    """la fonction va retourner le taux d'erreur pour les mots qui ont plusieurs étiquetes possibles"""
     count_errors = 0
     count_ambig= []
     for example in corpus:
@@ -147,7 +150,7 @@ print(rate_ambigu(corpus,list_word_ambigu))
 """
 EX5
 """
-def confusion_matrix(corpus):   #la matrice de confusion pour les étiqueteurs dans le corpus
+def confusion_matrix(corpus):   #la matrice de confusion pour les étiquetes dans le corpus
     confusion_matrix = {}
     for example in corpus:
         for gl, pl in zip(example["gold_labels"], example["predicted_labels"]):
