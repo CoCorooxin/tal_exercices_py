@@ -9,47 +9,48 @@ How to evaluate a tagger using python
 
 import json
 
-"""on ouvre les fichiers(output.json et train.conllu) qu'on va utiliser"""
 
 def read_output(fichier_output):
     with open(fichier_output, encoding= 'utf-8' ) as f:
         corpus = json.load(f)
     return corpus
 corpus = read_output("output.json")
-"""corpus est lu comme une liste"""
+"""alter : corpus = json.load(open("output.json") """
 
-""" on regroupe les fonctions utilitares: ce sont des petites toolkits."""
-
-def sum_t(corpus):
-    """calculer l'ensemble de mots contenant dans le corpus"""
+def sum_words(corpus):
+    """the sum of all the words contained in the corpus"""
     s = 0
     for example in corpus:
         s += len(example["gold_labels"])
     return s
-sum_tag = sum_t(corpus)
+sum_tag = sum_words(corpus)
 
-def get_train_word(fichier_train):
-    """la fonction pour récupérer les mots contenant dans le train corpus"""
+def get_train_word(train_conllu):
+    """get the dict of all words and their possible tags in the train corpus"""
     train_word = {}
-    with open(fichier_train, "r", encoding="utf-8") as read_conllu:
-        for data_string in read_conllu:
-            line = data_string.strip().split()
-            if len(line) >= 10 and "#" not in data_string:
-                if line[1] in train_word and line[3] not in train_word[line[1]]:
-                    train_word[line[1]].append(line[3])
-                else:
-                    train_word[line[1]] = [line[3]]
+    with open(train_conllu, "r", encoding="utf-8") as train_corpus:
+        for data_string in train_corpus:
+            if data_string.startswith("#") or not data_string.strip():
+                continue
+            word = data_string.split()[1]
+            tag = data_string.split()[3]
+            if tag == "_":
+                continue
+
+            if word in train_word and tag not in train_word[word]:
+                train_word[word].append(tag)
+            else:
+                train_word[word] = [tag]
     return train_word
 
 train_word= get_train_word("train.conllu")
 
 """
 EX1
-(pourcentage de mots dont les etiquettes predite 
-ne correspond pas aux etiquettes de reference).
+(the percentage of words predicted wrong)
 """
 
-def count_error_rate(corpus): # prendre en argument une liste composee des dicts, retourn une string
+def count_error_rate(corpus): # the fonction take a list of dicts as argument
     count_bad_tag = 0
     global sum_tag
     for example in corpus:
@@ -58,20 +59,22 @@ def count_error_rate(corpus): # prendre en argument une liste composee des dicts
                 count_bad_tag += 1
     error_rate = count_bad_tag/sum_tag
     return f"error_rate: {round(error_rate*100,2)}%"
-print(count_error_rate(corpus))
+#print(count_error_rate(corpus))
 """error_rate: 3.37%"""
 
 """
 EX2
 """
-def count_perfect_sentence(corpus): #prendre en argument une liste, retourne un string
+
+def count_perfect_sentence(corpus): #corpus is a list, the fonction returns a string
     count_ps = 0
-    global sum_tag
-    for example in corpus:
-        if example["gold_labels"] == example["predicted_labels"] :
+    count_sentence = 0
+    for sentence in corpus:
+        count_sentence += 1
+        if sentence["gold_labels"] == sentence["predicted_labels"] :
             count_ps+=1
-    return f"perfect_sentence_rate: {round(count_ps/sum_tag*100,2)}%"
-print(count_perfect_sentence(corpus))
+    return f"perfect_sentence_rate: {round(count_ps/count_sentence*100,2)}%"
+#print(count_perfect_sentence(corpus))
 """perfect_sentence_rate: 2.16%"""
 
 
@@ -79,7 +82,7 @@ print(count_perfect_sentence(corpus))
 EX3
 """
 def w_not_in_train_corpus(corpus, train_word ):   #prend une liste en parametre, retourne un string
-    """la fonction va retourner le taux d'érreur en prenant en compte que les mots hors de train corpus"""
+    """take into account only words that are not in the training corpus"""
     count_errors = 0
     count_OOV= 0
     for example in corpus:
@@ -89,17 +92,17 @@ def w_not_in_train_corpus(corpus, train_word ):   #prend une liste en parametre,
                 if gl != pl:
                     count_errors += 1
     return f"error_rate_for_OOV: {round(count_errors/count_OOV*100,2)}% (OOV stands for out of vocabulary)"
-print(w_not_in_train_corpus(corpus, train_word))
+#print(w_not_in_train_corpus(corpus, train_word))
 
 """error_rate_for_OOV: 15.31% (OOV stands for out of vocabulary) """
-"""C'est bien plus élévé que le taux d'erreur sur l'ensemble de corpus, parce que ce sont des mots que l'analyseur n'a jamais rencontré"""
+
 
 """
 EX4
 """
 
 def w_ambigu(dicto):
-    """la fonction recupère une liste de mots ambigus depuis le dicto crée par la fonction train_word_dict"""
+    """sum of words that have multiple possible tags"""
     result = []
     for word, tag in dicto.items():
         if len(tag) != 1:
@@ -107,7 +110,7 @@ def w_ambigu(dicto):
     return result
 
 def rate_ambigu(corpus, w_ambigu):   #prend une liste en parametre, retourne un string
-    """la fonction va retourner le taux d'erreur pour les mots qui ont plusieurs étiquetes possibles"""
+    """the error rate for ambiguous words"""
     count_errors = 0
     count_ambig= 0
     for example in corpus:
@@ -119,12 +122,13 @@ def rate_ambigu(corpus, w_ambigu):   #prend une liste en parametre, retourne un 
     return f"error_rate_for_ambiguous_words: {round(count_errors/count_ambig*100,2)}%"
 
 list_word_ambigu =  w_ambigu(get_train_word("train.conllu"))
-print(rate_ambigu(corpus,list_word_ambigu))
+#print(rate_ambigu(corpus,list_word_ambigu))
 """error_rate_for_ambiguous_words: 14.88%"""
 
 
 """
 EX5
+the confusion matrix for the tagger's result of prediction 
 """
 def confusion_matrix(corpus):   #la matrice de confusion pour les étiquetes dans le corpus
     confusion_matrix = {}
@@ -141,7 +145,7 @@ def confusion_matrix(corpus):   #la matrice de confusion pour les étiquetes dan
 
     return confusion_matrix
 
-print(confusion_matrix(corpus))
+#print(confusion_matrix(corpus))
 confusion_matrix = confusion_matrix(corpus)
 #print(len(confusion_matrix))
 """
