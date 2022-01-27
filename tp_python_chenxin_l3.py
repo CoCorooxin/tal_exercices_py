@@ -74,8 +74,8 @@ def count_perfect_sentence(corpus): #corpus is a list, the fonction returns a st
         if sentence["gold_labels"] == sentence["predicted_labels"] :
             count_ps+=1
     return f"perfect_sentence_rate: {round(count_ps/count_sentence*100,2)}%"
-#print(count_perfect_sentence(corpus))
-"""perfect_sentence_rate: 2.16%"""
+print(count_perfect_sentence(corpus))
+"""perfect_sentence_rate: 51.92%"""
 
 
 """
